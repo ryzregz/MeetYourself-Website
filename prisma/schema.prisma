@@ -1,0 +1,151 @@
+generator client {
+  provider      = "prisma-client-js"
+  // "native"  → local dev (macOS / Linux host)
+  // "linux-musl-openssl-3.0.x" → common containerized-deploy target (e.g. Alpine)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Admin portal ─────────────────────────────────────────────────────────────
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// ── Webinars ─────────────────────────────────────────────────────────────────
+
+model Webinar {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startsAt    DateTime
+  durationMin Int      @default(60)
+  format      String   @default("Live & online")
+  status      String   @default("upcoming") // upcoming | past | cancelled
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  registrations WebinarRegistration[]
+  recordings    Recording[]
+
+  @@index([status, startsAt])
+}
+
+model WebinarRegistration {
+  id           String   @id @default(cuid())
+  webinarId    String
+  webinar      Webinar  @relation(fields: [webinarId], references: [id], onDelete: Cascade)
+  fullName     String
+  email        String
+  phone        String?
+  registeredAt DateTime @default(now())
+
+  @@index([webinarId])
+}
+
+model Recording {
+  id            String   @id @default(cuid())
+  webinarId     String?
+  webinar       Webinar? @relation(fields: [webinarId], references: [id], onDelete: SetNull)
+  title         String
+  topic         String   @default("Coaching Session")
+  recordedAt    DateTime
+  durationLabel String // display-friendly, e.g. "52 min" — matches the site's existing copy
+  coverUrl      String
+  isPublished   Boolean  @default(true)
+
+  // Inline playback — mutually exclusive: at most one of these is set,
+  // matching `sourceType`. "none" means the dialog just shows the cover.
+  sourceType String  @default("none") // none | youtube | ppt
+  youtubeUrl String?
+  pptUrl     String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([isPublished, recordedAt])
+}
+
+// ── Shop ─────────────────────────────────────────────────────────────────────
+
+model Book {
+  id        String   @id @default(cuid())
+  title     String
+  format    String // "Ebook" | "Physical book"
+  physical  Boolean
+  tone      String   @default("brand") // Badge tone: "brand" | "neutral"
+  priceKes  Int
+  blurb     String
+  coverUrl  String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([isActive, createdAt])
+}
+
+model Order {
+  id     String @id @default(cuid())
+  bookId String
+  book   Book   @relation(fields: [bookId], references: [id])
+
+  // Snapshot at time of purchase — a later edit to the book must not rewrite history.
+  bookTitleSnapshot String
+  format            String
+  priceKes          Int
+
+  buyerName      String?
+  buyerEmail     String?
+  buyerPhone     String?
+  deliveryMethod String? // "email" | "whatsapp" — ebooks only
+
+  paymentMethod String // "mpesa_stk" | "mpesa_paybill"
+  paymentStatus String @default("pending") // pending | paid | failed | cancelled
+
+  fulfillmentStatus String @default("pending") // pending | fulfilled
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  delivery Delivery?
+
+  @@index([paymentStatus, createdAt])
+}
+
+model Delivery {
+  id            String    @id @default(cuid())
+  orderId       String    @unique
+  order         Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  recipientName String
+  county        String
+  addressLine   String
+  coordinates   String?
+  phone         String
+  status        String    @default("pending") // pending | shipped | delivered
+  shippedAt     DateTime?
+  deliveredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([status])
+}
+
+// ── Newsletter ───────────────────────────────────────────────────────────────
+
+model NewsletterSubscriber {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  status       String   @default("subscribed") // subscribed | unsubscribed
+  subscribedAt DateTime @default(now())
+}

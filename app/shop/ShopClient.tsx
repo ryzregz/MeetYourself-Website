@@ -2,9 +2,10 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import type { Book } from "@prisma/client";
 import { Alert, Badge, Button, Card, Dialog, Input, RadioGroup, Select, Tabs } from "@/components/ui";
-import { books, kenyanCounties, mockPlaces } from "@/lib/data";
-import type { Book } from "@/lib/types";
+import { kenyanCounties, mockPlaces } from "@/lib/data";
+import { formatKes } from "@/lib/format";
 
 const FILTER_TABS = [
   { id: "all", label: "All" },
@@ -22,7 +23,7 @@ const EBOOK_METHOD_OPTIONS = [
   { value: "whatsapp", label: "WhatsApp" },
 ];
 
-export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
+export function ShopClient({ books, initialBuyId }: { books: Book[]; initialBuyId?: string }) {
   const [filter, setFilter] = useState("all");
 
   // Mirrors the original's componentDidMount reading `?buy=` from the URL:
@@ -36,6 +37,14 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
   const [processing, setProcessing] = useState(false);
   const [paymentComplete, setPaymentComplete] = useState(false);
   const [ebookMethod, setEbookMethod] = useState<"email" | "whatsapp">("email");
+
+  const [recipientName, setRecipientName] = useState("");
+  const [county, setCounty] = useState("");
+  const [deliveryPhone, setDeliveryPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [mpesaPhone, setMpesaPhone] = useState("");
+
   const [addressQuery, setAddressQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [pinnedAddress, setPinnedAddress] = useState<string | null>(null);
@@ -49,6 +58,12 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
     setProcessing(false);
     setPaymentComplete(false);
     setEbookMethod("email");
+    setRecipientName("");
+    setCounty("");
+    setDeliveryPhone("");
+    setEmail("");
+    setWhatsappNumber("");
+    setMpesaPhone("");
     setAddressQuery("");
     setShowSuggestions(false);
     setPinnedAddress(null);
@@ -66,22 +81,62 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
   const isPaybill = mpesaMethod === "paybill";
   const isEmailMethod = ebookMethod === "email";
   const ebookMethodLabel = isEmailMethod ? "email address" : "WhatsApp number";
-  const accountNumber = activeBook ? `BOOK-${activeBook.id.toUpperCase()}` : "";
+  const accountNumber = activeBook ? `BOOK-${activeBook.id.slice(0, 8).toUpperCase()}` : "";
   const payButtonLabel = processing ? "Processing…" : isStk ? "Send STK push" : "I've paid, confirm order";
 
   const addressSuggestions = mockPlaces.filter((p) => p.label.toLowerCase().includes(addressQuery.toLowerCase()));
   const suggestionsVisible = showSuggestions && addressQuery.length > 0;
 
-  function confirmPayment() {
+  const canSubmit =
+    (isPhysical
+      ? !!recipientName.trim() && !!county && !!(pinnedAddress || addressQuery.trim()) && !!deliveryPhone.trim()
+      : isEmailMethod
+        ? !!email.trim()
+        : !!whatsappNumber.trim()) &&
+    (!isStk || !!mpesaPhone.trim());
+
+  async function confirmPayment() {
+    if (!activeBook) return;
     setProcessing(true);
     setPaymentStatus(
       isStk ? "STK push sent. Check your phone to enter your M-PESA PIN." : "Confirming your paybill payment with M-PESA…"
     );
-    setTimeout(() => {
-      setProcessing(false);
+    try {
+      // Keep the simulated STK-push pause — there's no real payment gateway wired up yet.
+      await new Promise((resolve) => setTimeout(resolve, 1400));
+
+      const buyerPhone = isStk ? mpesaPhone : isPhysical ? deliveryPhone : whatsappNumber;
+      const res = await fetch("/api/shop/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bookId: activeBook.id,
+          paymentMethod: isStk ? "mpesa_stk" : "mpesa_paybill",
+          buyerPhone: buyerPhone || undefined,
+          buyerEmail: !isPhysical && isEmailMethod ? email : undefined,
+          deliveryMethod: isPhysical ? undefined : ebookMethod,
+          delivery: isPhysical
+            ? {
+                recipientName,
+                county,
+                addressLine: pinnedAddress ?? addressQuery,
+                coordinates: pinnedCoords,
+                phone: deliveryPhone,
+              }
+            : undefined,
+        }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error ?? "Something went wrong recording your order.");
+      }
       setPaymentComplete(true);
       setPaymentStatus("");
-    }, 1400);
+    } catch (err) {
+      setPaymentStatus(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setProcessing(false);
+    }
   }
 
   return (
@@ -102,34 +157,38 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
       </section>
 
       <section style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 28px 72px" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-          {visibleBooks.map((book) => (
-            <Card key={book.id} padding={0}>
-              <div style={{ height: 260, background: "var(--gray-900)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                <Image
-                  src={book.cover}
-                  alt={book.title}
-                  width={935}
-                  height={1386}
-                  style={{ maxHeight: "100%", maxWidth: "100%", width: "auto", height: "auto", display: "block", boxShadow: "var(--shadow-lg)" }}
-                />
-              </div>
-              <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 8 }}>
-                <Badge tone={book.tone} variant="soft">
-                  {book.format}
-                </Badge>
-                <h3 style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{book.title}</h3>
-                <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{book.blurb}</p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{book.price}</div>
-                  <Button variant="primary" size="sm" onClick={() => openCheckoutFor(book)}>
-                    Buy now
-                  </Button>
+        {visibleBooks.length === 0 ? (
+          <p style={{ color: "var(--text-muted)" }}>No titles in this category yet — check back soon.</p>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
+            {visibleBooks.map((book) => (
+              <Card key={book.id} padding={0}>
+                <div style={{ height: 260, background: "var(--gray-900)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                  <Image
+                    src={book.coverUrl}
+                    alt={book.title}
+                    width={935}
+                    height={1386}
+                    style={{ maxHeight: "100%", maxWidth: "100%", width: "auto", height: "auto", display: "block", boxShadow: "var(--shadow-lg)" }}
+                  />
                 </div>
-              </div>
-            </Card>
-          ))}
-        </div>
+                <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 8 }}>
+                  <Badge tone={book.tone === "neutral" ? "neutral" : "brand"} variant="soft">
+                    {book.format}
+                  </Badge>
+                  <h3 style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{book.title}</h3>
+                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{book.blurb}</p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{formatKes(book.priceKes)}</div>
+                    <Button variant="primary" size="sm" onClick={() => openCheckoutFor(book)}>
+                      Buy now
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        )}
       </section>
 
       <Dialog
@@ -147,7 +206,7 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
               <Button variant="ghost" onClick={closeCheckout}>
                 Cancel
               </Button>
-              <Button variant="primary" disabled={processing} onClick={confirmPayment}>
+              <Button variant="primary" disabled={processing || !canSubmit} onClick={confirmPayment}>
                 {payButtonLabel}
               </Button>
             </>
@@ -160,7 +219,7 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
               <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-strong)" }}>{activeBook?.title}</div>
               <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{activeBook?.format}</div>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{activeBook?.price}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{activeBook ? formatKes(activeBook.priceKes) : ""}</div>
           </div>
 
           {!paymentComplete && (
@@ -168,8 +227,8 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
               {isPhysical ? (
                 <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)" }}>Delivery address (Kenya only)</div>
-                  <Input label="Full name" placeholder="Recipient name" />
-                  <Select label="County" placeholder="Select county" options={kenyanCounties} />
+                  <Input label="Full name" placeholder="Recipient name" value={recipientName} onChange={(e) => setRecipientName(e.target.value)} />
+                  <Select label="County" placeholder="Select county" options={kenyanCounties} value={county} onChange={(e) => setCounty(e.target.value)} />
                   <div style={{ position: "relative" }}>
                     <Input
                       label="Town / estate / street"
@@ -230,7 +289,7 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
                       <span style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--text-muted)" }}>{pinnedCoords}</span>
                     </div>
                   )}
-                  <Input label="Phone number" placeholder="07xx xxx xxx" />
+                  <Input label="Phone number" placeholder="07xx xxx xxx" value={deliveryPhone} onChange={(e) => setDeliveryPhone(e.target.value)} />
                   <Alert tone="info">
                     Delivery within Kenya takes 3 business days after payment. A flat KES 300 delivery fee applies.
                   </Alert>
@@ -240,9 +299,9 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
                   <div style={{ fontSize: 13, fontWeight: 600, color: "var(--text-strong)" }}>How would you like to receive your ebook?</div>
                   <RadioGroup direction="horizontal" options={EBOOK_METHOD_OPTIONS} value={ebookMethod} onChange={(v) => setEbookMethod(v as "email" | "whatsapp")} />
                   {isEmailMethod ? (
-                    <Input label="Email address" type="email" placeholder="you@email.com" />
+                    <Input label="Email address" type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
                   ) : (
-                    <Input label="WhatsApp number" placeholder="07xx xxx xxx" prefix="+254" />
+                    <Input label="WhatsApp number" placeholder="07xx xxx xxx" prefix="+254" value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)} />
                   )}
                 </div>
               )}
@@ -252,7 +311,7 @@ export function ShopClient({ initialBuyId }: { initialBuyId?: string }) {
                 <RadioGroup options={MPESA_OPTIONS} value={mpesaMethod} onChange={(v) => setMpesaMethod(v as "stk" | "paybill")} />
               </div>
 
-              {isStk && <Input label="M-PESA phone number" placeholder="07xx xxx xxx" prefix="+254" />}
+              {isStk && <Input label="M-PESA phone number" placeholder="07xx xxx xxx" prefix="+254" value={mpesaPhone} onChange={(e) => setMpesaPhone(e.target.value)} />}
 
               {isPaybill && (
                 <div style={{ background: "var(--gray-50)", borderRadius: "var(--radius-md)", padding: "14px 16px", display: "flex", flexDirection: "column", gap: 6 }}>

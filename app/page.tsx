@@ -1,12 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Avatar, Badge, Button, Card, Input, Tag } from "@/components/ui";
-import { books, recordings, testimonials } from "@/lib/data";
+import { NewsletterForm } from "@/components/site/NewsletterForm";
+import { testimonials } from "@/lib/data";
+import { formatKes, formatRecordingDate, formatWebinarSchedule } from "@/lib/format";
+import { prisma } from "@/lib/prisma";
 
-const featuredRecordings = recordings.slice(0, 3);
-const featuredBooks = books.slice(0, 3);
+export default async function HomePage() {
+  const [featuredRecordings, featuredBooks, nextWebinar] = await Promise.all([
+    prisma.recording.findMany({ where: { isPublished: true }, orderBy: { recordedAt: "desc" }, take: 3 }),
+    prisma.book.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 3 }),
+    prisma.webinar.findFirst({ where: { status: "upcoming" }, orderBy: { startsAt: "asc" } }),
+  ]);
+  const nextWebinarSchedule = nextWebinar ? formatWebinarSchedule(nextWebinar.startsAt) : null;
 
-export default function HomePage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-page)" }}>
       {/* Hero */}
@@ -86,18 +93,32 @@ export default function HomePage() {
       <section style={{ background: "var(--gray-900)", padding: "72px 28px" }}>
         <div style={{ maxWidth: 1240, margin: "0 auto", display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 40, alignItems: "center" }}>
           <div>
-            <Badge tone="brand" variant="solid" dot>
-              FREE WEBINAR &middot; TUE AUG 4, 2026 &middot; 7:00&ndash;8:00 PM EAT
-            </Badge>
-            <h2 style={{ margin: "16px 0 0", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 36, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#fff" }}>
-              Whatever You Call It,
-              <br />
-              That Is <span style={{ color: "var(--primary-400)" }}>What It Is</span>
-            </h2>
-            <p style={{ margin: "14px 0 0", fontSize: 16, color: "var(--gray-300)", maxWidth: 480 }}>
-              How to name your reality so it stops running you &mdash; with Mwenda Itumbiri, The Meet Yourself Coach &amp;
-              Author.
-            </p>
+            {nextWebinar && nextWebinarSchedule ? (
+              <>
+                <Badge tone="brand" variant="solid" dot>
+                  FREE WEBINAR &middot; {nextWebinarSchedule.datePart.toUpperCase()} &middot; {nextWebinarSchedule.timePart}
+                </Badge>
+                <h2 style={{ margin: "16px 0 0", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 36, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#fff" }}>
+                  {nextWebinar.title}
+                </h2>
+                <p style={{ margin: "14px 0 0", fontSize: 16, color: "var(--gray-300)", maxWidth: 480 }}>
+                  {nextWebinar.description ??
+                    "How to name your reality so it stops running you — with Mwenda Itumbiri, The Meet Yourself Coach & Author."}
+                </p>
+              </>
+            ) : (
+              <>
+                <Badge tone="brand" variant="solid">
+                  WEBINARS
+                </Badge>
+                <h2 style={{ margin: "16px 0 0", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 36, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#fff" }}>
+                  New webinars are announced regularly
+                </h2>
+                <p style={{ margin: "14px 0 0", fontSize: 16, color: "var(--gray-300)", maxWidth: 480 }}>
+                  Check back soon, or subscribe below to hear about the next one first.
+                </p>
+              </>
+            )}
             <div style={{ display: "flex", gap: 24, marginTop: 28, flexWrap: "wrap" }}>
               {["Shift Your Mindset", "Reclaim Your Power", "Design Your Life"].map((label) => (
                 <div key={label} style={{ display: "flex", gap: 8, alignItems: "flex-start", maxWidth: 150 }}>
@@ -150,13 +171,13 @@ export default function HomePage() {
           {featuredRecordings.map((rec) => (
             <Card key={rec.id} interactive padding={0}>
               <div style={{ position: "relative", height: 170 }}>
-                <Image src={rec.cover} alt={rec.title} fill style={{ objectFit: "cover" }} />
+                <Image src={rec.coverUrl} alt={rec.title} fill style={{ objectFit: "cover" }} />
               </div>
               <div style={{ padding: 18 }}>
                 <Tag>{rec.topic}</Tag>
                 <h3 style={{ margin: "10px 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{rec.title}</h3>
                 <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                  {rec.date} &middot; {rec.duration}
+                  {formatRecordingDate(rec.recordedAt)} &middot; {rec.durationLabel}
                 </div>
               </div>
             </Card>
@@ -220,7 +241,7 @@ export default function HomePage() {
             <Card key={book.id} interactive padding={0}>
               <div style={{ height: 230, background: "var(--gray-900)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
                 <Image
-                  src={book.cover}
+                  src={book.coverUrl}
                   alt={book.title}
                   width={935}
                   height={1386}
@@ -228,12 +249,12 @@ export default function HomePage() {
                 />
               </div>
               <div style={{ padding: 18 }}>
-                <Badge tone={book.tone} variant="soft">
+                <Badge tone={book.tone === "neutral" ? "neutral" : "brand"} variant="soft">
                   {book.format}
                 </Badge>
                 <h3 style={{ margin: "10px 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{book.title}</h3>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>{book.price}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "var(--text-strong)" }}>{formatKes(book.priceKes)}</div>
                   <Link href={`/shop?buy=${book.id}`}>
                     <Button variant="primary" size="sm">
                       Buy now
@@ -279,12 +300,7 @@ export default function HomePage() {
             Get new webinars and book releases in your inbox
           </h2>
           <p style={{ margin: "10px 0 0", fontSize: 15, color: "var(--gray-300)" }}>One short email a week. No spam, ever.</p>
-          <div style={{ display: "flex", gap: 10, marginTop: 24, maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
-            <div style={{ flex: 1 }}>
-              <Input placeholder="you@email.com" type="email" style={{ height: 40 }} />
-            </div>
-            <Button variant="primary">Subscribe</Button>
-          </div>
+          <NewsletterForm />
         </div>
       </section>
     </div>
