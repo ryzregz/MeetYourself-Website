@@ -30,8 +30,14 @@ const SIZES: Record<
 };
 
 const VARIANTS: Record<ButtonVariant, CSSProperties> = {
+  // Gradient, not flat — the one variant that carries the "vibrant" brand
+  // feel, so it also gets the lift + glow treatment below.
   primary: {
-    background: "var(--color-brand)",
+    // `background` (shorthand) accepts a gradient value directly — using it
+    // consistently everywhere avoids ever mixing `background` and
+    // `backgroundImage` on the same element (React warns loudly if a later
+    // render sets one where the other was set before).
+    background: "var(--gradient-brand)",
     color: "var(--text-on-brand)",
     border: "1px solid transparent",
   },
@@ -57,8 +63,7 @@ const VARIANTS: Record<ButtonVariant, CSSProperties> = {
   },
 };
 
-const HOVER_BG: Record<ButtonVariant, string> = {
-  primary: "var(--color-brand-hover)",
+const HOVER_BG: Partial<Record<ButtonVariant, string>> = {
   secondary: "var(--gray-200)",
   outline: "var(--gray-50)",
   ghost: "var(--surface-hover)",
@@ -84,8 +89,11 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const [hover, setHover] = useState(false);
+  const [pressed, setPressed] = useState(false);
   const s = SIZES[size];
   const v = VARIANTS[variant];
+  const isPrimary = variant === "primary";
+  const active = hover && !disabled;
 
   const base: CSSProperties = {
     display: "inline-flex",
@@ -103,11 +111,19 @@ export function Button({
     cursor: disabled ? "not-allowed" : "pointer",
     opacity: disabled ? 0.5 : 1,
     transition:
-      "background var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard), transform var(--duration-fast) var(--ease-standard)",
+      "background var(--duration-base) var(--ease-standard), box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-fast) var(--ease-emphasized)",
     whiteSpace: "nowrap",
     userSelect: "none",
     ...v,
-    background: hover && !disabled ? HOVER_BG[variant] : v.background,
+    background: isPrimary
+      ? active
+        ? "var(--gradient-brand-vivid)"
+        : "var(--gradient-brand)"
+      : active
+        ? (HOVER_BG[variant] ?? v.background)
+        : v.background,
+    boxShadow: isPrimary ? (active ? "var(--shadow-glow)" : "var(--shadow-glow-sm)") : "none",
+    transform: pressed && !disabled ? "translateY(0) scale(0.97)" : active ? "translateY(-2px)" : "translateY(0) scale(1)",
     ...style,
   };
 
@@ -118,7 +134,12 @@ export function Button({
       onClick={onClick}
       style={base}
       onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
+      onMouseLeave={() => {
+        setHover(false);
+        setPressed(false);
+      }}
+      onMouseDown={() => setPressed(true)}
+      onMouseUp={() => setPressed(false)}
       {...rest}
     >
       {iconLeft && (

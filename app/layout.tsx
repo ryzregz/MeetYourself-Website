@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import "./globals.css";
 
-const inter = Inter({
+// A more geometric, contemporary sans than Inter — same variable-font
+// approach, just swapped in as --font-jakarta below.
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-inter",
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-jakarta",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -24,7 +26,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body>
         <Header />
         {children}

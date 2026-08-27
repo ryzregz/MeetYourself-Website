@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { Book } from "@prisma/client";
 import { Alert, Badge, Button, Card, Dialog, Input, RadioGroup, Select, Tabs } from "@/components/ui";
+import { Reveal } from "@/components/site/Reveal";
 import { kenyanCounties, mockPlaces } from "@/lib/data";
 import { formatKes } from "@/lib/format";
 
@@ -141,51 +142,55 @@ export function ShopClient({ books, initialBuyId }: { books: Book[]; initialBuyI
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-page)" }}>
-      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "72px 28px 0" }}>
-        <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--primary-600)" }}>Shop</div>
-        <h1 style={{ margin: "8px 0 0", fontSize: 36, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-strong)" }}>
-          Ebooks &amp; physical books
-        </h1>
-        <p style={{ margin: "12px 0 0", fontSize: 16, color: "var(--text-body)", maxWidth: 560 }}>
-          Mwenda&rsquo;s writing on naming your reality and reclaiming your power. Ebooks deliver instantly; physical
-          books ship across Kenya.
-        </p>
+      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "56px 28px 0" }}>
+        <Reveal>
+          <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--primary-600)" }}>Shop</div>
+          <h1 style={{ margin: "8px 0 0", fontSize: 36, fontWeight: 700, letterSpacing: "-0.01em", color: "var(--text-strong)" }}>
+            Ebooks &amp; physical books
+          </h1>
+          <p style={{ margin: "12px 0 0", fontSize: 16, color: "var(--text-body)", maxWidth: 560 }}>
+            Mwenda&rsquo;s writing on naming your reality and reclaiming your power. Ebooks deliver instantly; physical
+            books ship across Kenya.
+          </p>
+        </Reveal>
       </section>
 
-      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 28px 0" }}>
+      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "24px 28px 0" }}>
         <Tabs tabs={FILTER_TABS} variant="pill" value={filter} onChange={setFilter} />
       </section>
 
-      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "32px 28px 72px" }}>
+      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "24px 28px 56px" }}>
         {visibleBooks.length === 0 ? (
           <p style={{ color: "var(--text-muted)" }}>No titles in this category yet — check back soon.</p>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-            {visibleBooks.map((book) => (
-              <Card key={book.id} padding={0}>
-                <div style={{ height: 260, background: "var(--gray-900)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
-                  <Image
-                    src={book.coverUrl}
-                    alt={book.title}
-                    width={935}
-                    height={1386}
-                    style={{ maxHeight: "100%", maxWidth: "100%", width: "auto", height: "auto", display: "block", boxShadow: "var(--shadow-lg)" }}
-                  />
-                </div>
-                <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 8 }}>
-                  <Badge tone={book.tone === "neutral" ? "neutral" : "brand"} variant="soft">
-                    {book.format}
-                  </Badge>
-                  <h3 style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{book.title}</h3>
-                  <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{book.blurb}</p>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{formatKes(book.priceKes)}</div>
-                    <Button variant="primary" size="sm" onClick={() => openCheckoutFor(book)}>
-                      Buy now
-                    </Button>
+            {visibleBooks.map((book, i) => (
+              <Reveal key={book.id} delayMs={(i % 3) * 90}>
+                <Card interactive padding={0}>
+                  <div className="hover-zoom-frame" style={{ height: 260, background: "var(--gray-900)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+                    <Image
+                      src={book.coverUrl}
+                      alt={book.title}
+                      width={935}
+                      height={1386}
+                      style={{ maxHeight: "100%", maxWidth: "100%", width: "auto", height: "auto", display: "block", boxShadow: "var(--shadow-lg)" }}
+                    />
                   </div>
-                </div>
-              </Card>
+                  <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <Badge tone={book.tone === "neutral" ? "neutral" : "brand"} variant="soft">
+                      {book.format}
+                    </Badge>
+                    <h3 style={{ margin: "2px 0 0", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{book.title}</h3>
+                    <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.5 }}>{book.blurb}</p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "var(--text-strong)" }}>{formatKes(book.priceKes)}</div>
+                      <Button variant="primary" size="sm" onClick={() => openCheckoutFor(book)}>
+                        Buy now
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              </Reveal>
             ))}
           </div>
         )}

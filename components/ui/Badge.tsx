@@ -14,6 +14,8 @@ export interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, "style
   tone?: BadgeTone;
   variant?: BadgeVariant;
   dot?: boolean;
+  /** Animates the dot with a soft radiating pulse — reserve for genuinely "live" states. */
+  pulse?: boolean;
   style?: CSSProperties;
 }
 
@@ -32,6 +34,7 @@ export function Badge({
   tone = "neutral",
   variant = "soft",
   dot = false,
+  pulse = false,
   style,
   ...rest
 }: BadgeProps) {
@@ -64,6 +67,8 @@ export function Badge({
             height: 6,
             borderRadius: "50%",
             background: variant === "solid" ? "currentColor" : t.dot,
+            color: variant === "solid" ? fg : t.dot,
+            animation: pulse ? "pulse-dot 1.8s var(--ease-standard) infinite" : undefined,
           }}
         />
       )}

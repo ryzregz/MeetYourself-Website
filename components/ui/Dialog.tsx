@@ -46,6 +46,7 @@ export function Dialog({ open, onClose, title, children, footer, width = 480, st
         padding: 24,
         background: "rgba(15,23,42,0.45)",
         backdropFilter: "blur(2px)",
+        animation: "scrim-fade-in var(--duration-slow) var(--ease-standard)",
       }}
     >
       <div
@@ -62,6 +63,7 @@ export function Dialog({ open, onClose, title, children, footer, width = 480, st
           borderRadius: "var(--radius-xl)",
           boxShadow: "var(--shadow-lg)",
           overflow: "hidden",
+          animation: "dialog-scale-in var(--duration-slow) var(--ease-emphasized)",
           ...style,
         }}
       >

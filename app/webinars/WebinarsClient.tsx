@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import type { Recording, Webinar } from "@prisma/client";
 import { Alert, Badge, Button, Card, Dialog, Input, Tabs, Tag } from "@/components/ui";
+import { Reveal } from "@/components/site/Reveal";
 import { formatMonthDay, formatRecordingDate, formatWebinarSchedule } from "@/lib/format";
 import { getOfficeViewerUrl, getYoutubeEmbedUrl, isPubliclyReachableHost, toAbsoluteUrl } from "@/lib/media";
 
@@ -77,19 +78,61 @@ export function WebinarsClient({
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-page)" }}>
       {/* Hero + register */}
-      <section style={{ background: "var(--gray-900)", padding: "72px 28px" }}>
-        <div style={{ maxWidth: 1240, margin: "0 auto", display: "grid", gridTemplateColumns: "1.05fr 0.95fr", gap: 40, alignItems: "center" }}>
-          <div>
+      <section style={{ position: "relative", overflow: "hidden", background: "var(--gray-900)", padding: "56px 28px" }}>
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: "radial-gradient(circle at 15% 10%, rgba(232, 169, 61, 0.16), transparent 55%)",
+            pointerEvents: "none",
+          }}
+        />
+        <div style={{ position: "relative", maxWidth: 1240, margin: "0 auto", display: "grid", gridTemplateColumns: "0.6fr 1.05fr 0.95fr", gap: 32, alignItems: "center" }}>
+          <Reveal>
+            <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: -20,
+                  background: "var(--gradient-brand)",
+                  opacity: 0.25,
+                  filter: "blur(30px)",
+                  borderRadius: "var(--radius-xl)",
+                }}
+              />
+              <div
+                style={{
+                  position: "relative",
+                  transform: "rotate(-4deg)",
+                  maxWidth: 190,
+                  borderRadius: "var(--radius-lg)",
+                  overflow: "hidden",
+                  border: "1px solid var(--gray-800)",
+                  boxShadow: "var(--shadow-lg)",
+                }}
+              >
+                <Image
+                  src="/assets/book-cover.jpg"
+                  alt="Design Your Life: A Field Guide, by Mwenda Itumbiri"
+                  width={935}
+                  height={1386}
+                  style={{ display: "block", width: "100%", height: "auto" }}
+                />
+              </div>
+            </div>
+          </Reveal>
+          <Reveal delayMs={90}>
             {selectedWebinar && schedule ? (
               <>
-                <Badge tone="brand" variant="solid" dot>
+                <Badge tone="brand" variant="solid" dot pulse>
                   FREE WEBINAR &middot; {schedule.datePart.toUpperCase()} &middot; {schedule.timePart}&ndash;
                   {endTime(selectedWebinar.startsAt, selectedWebinar.durationMin)} EAT
                 </Badge>
                 <h1 style={{ margin: "16px 0 0", fontFamily: "var(--font-sans)", fontWeight: 700, fontSize: 38, lineHeight: 1.15, letterSpacing: "-0.01em", color: "#fff" }}>
                   {selectedWebinar.title}
                 </h1>
-                <p style={{ margin: "14px 0 0", fontSize: 16, color: "var(--gray-300)", maxWidth: 480 }}>
+                <p style={{ margin: "14px 0 0", fontSize: 16, color: "var(--gray-300)", maxWidth: 420 }}>
                   {selectedWebinar.description ??
                     "Join Mwenda Itumbiri, The Meet Yourself Coach & Author, live — bring your questions."}
                 </p>
@@ -115,33 +158,37 @@ export function WebinarsClient({
                 No upcoming webinars right now — check back soon.
               </h1>
             )}
-          </div>
-          <div id="register" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--gray-800)", borderRadius: "var(--radius-xl)", padding: 24 }}>
-            <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--gray-400)", fontWeight: 600 }}>
-              Reserve your seat
+          </Reveal>
+          <Reveal delayMs={180}>
+            <div id="register" style={{ background: "rgba(255,255,255,0.04)", border: "1px solid var(--gray-800)", borderRadius: "var(--radius-xl)", padding: 24 }}>
+              <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--gray-400)", fontWeight: 600 }}>
+                Reserve your seat
+              </div>
+              <p style={{ margin: "8px 0 0", color: "var(--gray-200)", fontSize: 15 }}>
+                Walk away with a new perspective that transforms how you live, lead, and relate.
+              </p>
+              <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+                <Input label="Full name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                <Input label="Email address" type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <Input label="Phone (for reminders)" placeholder="07xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                <Button variant="primary" fullWidth disabled={!selectedWebinar || submitting} onClick={handleRegister}>
+                  {submitting ? "Saving…" : "Save my seat"}
+                </Button>
+                {registerError && <Alert tone="error">{registerError}</Alert>}
+                {registered && (
+                  <Alert tone="success">You&rsquo;re registered. A calendar invite and join link will follow by email.</Alert>
+                )}
+              </div>
             </div>
-            <p style={{ margin: "8px 0 0", color: "var(--gray-200)", fontSize: 15 }}>
-              Walk away with a new perspective that transforms how you live, lead, and relate.
-            </p>
-            <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 14 }}>
-              <Input label="Full name" placeholder="Your name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-              <Input label="Email address" type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-              <Input label="Phone (for reminders)" placeholder="07xx xxx xxx" value={phone} onChange={(e) => setPhone(e.target.value)} />
-              <Button variant="primary" fullWidth disabled={!selectedWebinar || submitting} onClick={handleRegister}>
-                {submitting ? "Saving…" : "Save my seat"}
-              </Button>
-              {registerError && <Alert tone="error">{registerError}</Alert>}
-              {registered && (
-                <Alert tone="success">You&rsquo;re registered. A calendar invite and join link will follow by email.</Alert>
-              )}
-            </div>
-          </div>
+          </Reveal>
         </div>
       </section>
 
       {/* Tabs */}
-      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "72px 28px 32px" }}>
-        <Tabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
+      <section style={{ maxWidth: 1240, margin: "0 auto", padding: "56px 28px 24px" }}>
+        <Reveal>
+          <Tabs tabs={TABS} value={activeTab} onChange={setActiveTab} />
+        </Reveal>
       </section>
 
       {isUpcoming && (
@@ -150,36 +197,38 @@ export function WebinarsClient({
             <p style={{ color: "var(--text-muted)" }}>No upcoming webinars scheduled right now.</p>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 24 }}>
-              {upcomingWebinars.map((w) => {
+              {upcomingWebinars.map((w, i) => {
                 const { month, day } = formatMonthDay(w.startsAt);
                 return (
-                  <Card key={w.id}>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      <div
-                        style={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: "var(--radius-md)",
-                          background: "var(--primary-50)",
-                          display: "flex",
-                          flexDirection: "column",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--primary-700)" }}>{month}</div>
-                        <div style={{ fontSize: 20, fontWeight: 700, color: "var(--primary-700)" }}>{day}</div>
+                  <Reveal key={w.id} delayMs={i * 90}>
+                    <Card interactive>
+                      <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                        <div
+                          style={{
+                            width: 64,
+                            height: 64,
+                            borderRadius: "var(--radius-md)",
+                            background: "var(--primary-50)",
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", color: "var(--primary-700)" }}>{month}</div>
+                          <div style={{ fontSize: 20, fontWeight: 700, color: "var(--primary-700)" }}>{day}</div>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{w.title}</h3>
+                          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{formatWebinarSchedule(w.startsAt).combined}</div>
+                        </div>
+                        <Button variant="outline" size="sm" onClick={() => selectAndScrollToRegister(w.id)}>
+                          Register
+                        </Button>
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <h3 style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{w.title}</h3>
-                        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{formatWebinarSchedule(w.startsAt).combined}</div>
-                      </div>
-                      <Button variant="outline" size="sm" onClick={() => selectAndScrollToRegister(w.id)}>
-                        Register
-                      </Button>
-                    </div>
-                  </Card>
+                    </Card>
+                  </Reveal>
                 );
               })}
             </div>
@@ -190,37 +239,39 @@ export function WebinarsClient({
       {isLibrary && (
         <section style={{ maxWidth: 1240, margin: "0 auto", padding: "0 28px 72px" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 24 }}>
-            {recordings.map((rec) => (
-              <Card key={rec.id} interactive padding={0}>
-                <div>
-                  <div style={{ position: "relative", height: 170 }}>
-                    <Image src={rec.coverUrl} alt={rec.title} fill style={{ objectFit: "cover" }} />
-                    <span
-                      style={{
-                        position: "absolute",
-                        bottom: 8,
-                        right: 8,
-                        background: "rgba(15,23,42,0.75)",
-                        color: "#fff",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        padding: "2px 8px",
-                        borderRadius: "var(--radius-sm)",
-                      }}
-                    >
-                      {rec.durationLabel}
-                    </span>
+            {recordings.map((rec, i) => (
+              <Reveal key={rec.id} delayMs={(i % 3) * 90}>
+                <Card interactive padding={0}>
+                  <div>
+                    <div className="hover-zoom-frame" style={{ position: "relative", height: 170 }}>
+                      <Image src={rec.coverUrl} alt={rec.title} fill style={{ objectFit: "cover" }} />
+                      <span
+                        style={{
+                          position: "absolute",
+                          bottom: 8,
+                          right: 8,
+                          background: "rgba(15,23,42,0.75)",
+                          color: "#fff",
+                          fontSize: 11,
+                          fontWeight: 600,
+                          padding: "2px 8px",
+                          borderRadius: "var(--radius-sm)",
+                        }}
+                      >
+                        {rec.durationLabel}
+                      </span>
+                    </div>
+                    <div style={{ padding: 18 }}>
+                      <Tag>{rec.topic}</Tag>
+                      <h3 style={{ margin: "10px 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{rec.title}</h3>
+                      <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>{formatRecordingDate(rec.recordedAt)}</div>
+                      <Button variant="secondary" size="sm" fullWidth onClick={() => setActiveRec(rec)}>
+                        {rec.sourceType === "ppt" ? "View presentation" : "Watch recording"}
+                      </Button>
+                    </div>
                   </div>
-                  <div style={{ padding: 18 }}>
-                    <Tag>{rec.topic}</Tag>
-                    <h3 style={{ margin: "10px 0 4px", fontSize: 16, fontWeight: 600, color: "var(--text-strong)" }}>{rec.title}</h3>
-                    <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 12 }}>{formatRecordingDate(rec.recordedAt)}</div>
-                    <Button variant="secondary" size="sm" fullWidth onClick={() => setActiveRec(rec)}>
-                      Watch recording
-                    </Button>
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </Reveal>
             ))}
           </div>
         </section>

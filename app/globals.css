@@ -104,7 +104,7 @@
   --focus-ring: 0 0 0 3px var(--primary-200);
 
   /* ---- Family (bridged to next/font variables in layout.tsx) ---- */
-  --font-sans: var(--font-inter), Arial, Helvetica, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), Arial, Helvetica, system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "SF Mono", ui-monospace, Menlo,
     monospace;
 
@@ -152,6 +152,18 @@
   --shadow-lg: 0px 8px 24px rgba(0, 0, 0, 0.15);
   --shadow-card: 0px 1px 2px rgba(15, 23, 42, 0.06),
     0px 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow-glow-sm: 0px 4px 16px rgba(232, 169, 61, 0.28);
+  --shadow-glow: 0px 12px 32px rgba(232, 169, 61, 0.35);
+
+  /* ---- Gradients (brand — layered onto the flat amber scale for depth) ---- */
+  --gradient-brand: linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%);
+  --gradient-brand-vivid: linear-gradient(135deg, #fcd34d 0%, #e8a93d 45%, #c2410c 100%);
+  --gradient-hero-glow: radial-gradient(
+      circle at 15% 20%,
+      rgba(252, 211, 77, 0.25),
+      transparent 45%
+    ),
+    radial-gradient(circle at 85% 0%, rgba(194, 65, 12, 0.16), transparent 50%);
 
   /* ---- Motion ---- */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
@@ -159,6 +171,7 @@
   --duration-fast: 120ms;
   --duration-base: 180ms;
   --duration-slow: 260ms;
+  --duration-reveal: 700ms;
 
   /* ---- Spacing ---- */
   --space-0: 0;
@@ -252,4 +265,96 @@ kbd,
 samp {
   font-family: var(--font-mono);
   font-size: 0.92em;
+}
+
+/* ============================================================
+   MOTION — shared keyframes + a couple of reusable utility classes.
+   Components mostly animate via inline styles (kept next to the JSX
+   that needs them); these are for effects only expressible in CSS
+   (background-position keyframes, gradient text clipping) or reused
+   in enough places to earn a class.
+   ============================================================ */
+
+/* Uses currentColor so any tone's dot pulses in its own color — the element
+   sets both `background` and `color` to the same swatch (see Badge.tsx). */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 55%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 0%, transparent);
+  }
+}
+
+@keyframes scrim-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes dialog-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes float-blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -4%) scale(1.05);
+  }
+}
+
+@keyframes shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.gradient-text {
+  background: var(--gradient-brand-vivid);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.hover-zoom-frame {
+  overflow: hidden;
+}
+.hover-zoom-frame img {
+  transition: transform var(--duration-slow) var(--ease-standard);
+}
+.hover-zoom-frame:hover img {
+  transform: scale(1.06);
+}
+
+/* Respect the OS-level reduced-motion preference globally — this alone
+   neutralizes every transition/animation above and every inline-styled
+   one (Reveal, AnimatedNumber, Button, Card…), no per-component checks
+   needed. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

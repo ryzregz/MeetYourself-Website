@@ -35,12 +35,12 @@ export function Card({
       onMouseLeave={() => interactive && setHover(false)}
       style={{
         background: "var(--surface-card)",
-        border: "1px solid var(--border-subtle)",
+        border: `1px solid ${hover ? "var(--color-brand-border)" : "var(--border-subtle)"}`,
         borderRadius: "var(--radius-lg)",
-        boxShadow: hover ? "var(--shadow-md)" : "var(--shadow-card)",
+        boxShadow: hover ? "var(--shadow-lg)" : "var(--shadow-card)",
         transition:
-          "box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-standard)",
-        transform: hover ? "translateY(-1px)" : "none",
+          "box-shadow var(--duration-slow) var(--ease-standard), transform var(--duration-slow) var(--ease-standard), border-color var(--duration-slow) var(--ease-standard)",
+        transform: hover ? "translateY(-4px)" : "none",
         cursor: interactive ? "pointer" : "default",
         overflow: "hidden",
         ...style,
