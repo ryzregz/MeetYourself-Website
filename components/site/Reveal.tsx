@@ -26,6 +26,19 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+
+    // Belt-and-suspenders: if IntersectionObserver isn't available, or the
+    // element is already in the viewport on first paint (the observer's own
+    // callback fires a beat late for that case), reveal on the next frame
+    // instead of leaving content stuck at opacity 0.
+    const alreadyInView =
+      typeof IntersectionObserver === "undefined" ||
+      (el.getBoundingClientRect().top < window.innerHeight && el.getBoundingClientRect().bottom > 0);
+    if (alreadyInView) {
+      const raf = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(raf);
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {

@@ -29,18 +29,39 @@ export function AnimatedNumber({
     if (!el) return;
     setDisplay(0);
     let frame: number;
+
+    function startCountUp() {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - start) / durationMs);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        setDisplay(value * eased);
+        if (progress < 1) frame = requestAnimationFrame(tick);
+      };
+      frame = requestAnimationFrame(tick);
+    }
+
+    // Belt-and-suspenders: without IntersectionObserver, just count up
+    // immediately rather than leaving the number stuck at 0.
+    if (typeof IntersectionObserver === "undefined") {
+      startCountUp();
+      return () => cancelAnimationFrame(frame);
+    }
+
+    // The observer's callback fires a beat late for anything already in the
+    // viewport on first paint — check synchronously too so above-the-fold
+    // numbers don't sit stuck at 0.
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      startCountUp();
+      return () => cancelAnimationFrame(frame);
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
         observer.disconnect();
-        const start = performance.now();
-        const tick = (now: number) => {
-          const progress = Math.min(1, (now - start) / durationMs);
-          const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
-          setDisplay(value * eased);
-          if (progress < 1) frame = requestAnimationFrame(tick);
-        };
-        frame = requestAnimationFrame(tick);
+        startCountUp();
       },
       { threshold: 0.5 }
     );
