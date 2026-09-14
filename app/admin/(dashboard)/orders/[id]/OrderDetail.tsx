@@ -90,7 +90,7 @@ export function OrderDetail({ order: initialOrder }: { order: OrderWithRelations
         <Card title="Item">
           <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
             <div style={{ position: "relative", width: 56, height: 78, borderRadius: "var(--radius-sm)", overflow: "hidden", background: "var(--gray-900)", flexShrink: 0 }}>
-              <Image src={order.book.coverUrl} alt="" fill style={{ objectFit: "contain" }} />
+              <Image src={order.book.coverUrl} alt="" fill sizes="56px" style={{ objectFit: "contain" }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontWeight: 600, color: "var(--text-strong)" }}>{order.bookTitleSnapshot}</div>

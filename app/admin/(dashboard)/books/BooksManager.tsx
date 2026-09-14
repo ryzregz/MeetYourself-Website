@@ -140,7 +140,7 @@ export function BooksManager({ books }: { books: Book[] }) {
               <tr key={book.id}>
                 <td style={adminStyles.td}>
                   <div style={{ position: "relative", width: 40, height: 56, borderRadius: "var(--radius-sm)", overflow: "hidden", background: "var(--gray-900)" }}>
-                    <Image src={book.coverUrl} alt="" fill style={{ objectFit: "contain" }} />
+                    <Image src={book.coverUrl} alt="" fill sizes="40px" style={{ objectFit: "contain" }} />
                   </div>
                 </td>
                 <td style={adminStyles.td}>{book.title}</td>

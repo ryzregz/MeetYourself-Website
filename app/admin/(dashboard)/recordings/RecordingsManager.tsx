@@ -157,7 +157,7 @@ export function RecordingsManager({ recordings }: { recordings: Recording[] }) {
               <tr key={rec.id}>
                 <td style={adminStyles.td}>
                   <div style={{ position: "relative", width: 56, height: 40, borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-                    <Image src={rec.coverUrl} alt="" fill style={{ objectFit: "cover" }} />
+                    <Image src={rec.coverUrl} alt="" fill sizes="56px" style={{ objectFit: "cover" }} />
                   </div>
                 </td>
                 <td style={adminStyles.td}>{rec.title}</td>

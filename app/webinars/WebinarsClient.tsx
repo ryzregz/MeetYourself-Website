@@ -244,7 +244,7 @@ export function WebinarsClient({
                 <Card interactive padding={0}>
                   <div>
                     <div className="hover-zoom-frame" style={{ position: "relative", height: 170 }}>
-                      <Image src={rec.coverUrl} alt={rec.title} fill style={{ objectFit: "cover" }} />
+                      <Image src={rec.coverUrl} alt={rec.title} fill sizes="(min-width: 1240px) 400px, 33vw" style={{ objectFit: "cover" }} />
                       <span
                         style={{
                           position: "absolute",
