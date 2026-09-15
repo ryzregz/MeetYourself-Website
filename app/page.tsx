@@ -6,14 +6,27 @@ import { Reveal } from "@/components/site/Reveal";
 import { AnimatedNumber } from "@/components/site/AnimatedNumber";
 import { formatKes, formatRecordingDate, formatWebinarSchedule } from "@/lib/format";
 import { prisma } from "@/lib/prisma";
+import { getSiteSettings, parseHeroStats } from "@/lib/settings";
+
+// This page reads live data (recordings, books, the next webinar, and
+// admin-editable site settings) — without this, Next prerenders it once at
+// build time and admin edits never show up until the next deploy.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [featuredRecordings, featuredBooks, nextWebinar] = await Promise.all([
+  const [featuredRecordings, featuredBooks, nextWebinar, settings] = await Promise.all([
     prisma.recording.findMany({ where: { isPublished: true }, orderBy: { recordedAt: "desc" }, take: 3 }),
     prisma.book.findMany({ where: { isActive: true }, orderBy: { createdAt: "desc" }, take: 3 }),
     prisma.webinar.findFirst({ where: { status: "upcoming" }, orderBy: { startsAt: "asc" } }),
+    getSiteSettings(),
   ]);
   const nextWebinarSchedule = nextWebinar ? formatWebinarSchedule(nextWebinar.startsAt) : null;
+  const heroStats = parseHeroStats(settings.heroStats);
+  // The last word of the admin-editable headline carries the site's accent
+  // gradient (matches the previous hardcoded "...Greatness in YOU." styling).
+  const headlineWords = settings.heroHeadline.trim().split(/\s+/);
+  const headlineAccent = headlineWords.at(-1) ?? "";
+  const headlineLead = headlineWords.slice(0, -1).join(" ");
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-page)" }}>
@@ -45,7 +58,7 @@ export default async function HomePage() {
         >
           <Reveal>
             <Badge tone="brand" variant="solid" style={{ height: 32, padding: "0 14px", fontSize: 12 }}>
-              LIVE WEBINARS · EBOOKS · BOOKS
+              {settings.heroBadge}
             </Badge>
             <h1
               style={{
@@ -58,13 +71,11 @@ export default async function HomePage() {
                 color: "var(--text-strong)",
               }}
             >
-              Unveil. Unleash.
-              <br />
-              Greatness in <span className="gradient-text">YOU</span>.
+              {headlineLead ? `${headlineLead} ` : ""}
+              <span className="gradient-text">{headlineAccent}</span>
             </h1>
             <p style={{ margin: "20px 0 0", fontSize: 17, lineHeight: 1.6, color: "var(--text-body)", maxWidth: 520 }}>
-              Meet Yourself Academy is Mwenda Itumbiri&rsquo;s home for mindset coaching &mdash; live webinars, recorded
-              sessions, and books that help you name your reality so it stops running you.
+              {settings.heroSubtext}
             </p>
             <div style={{ display: "flex", gap: 12, marginTop: 32 }}>
               <Link href="/webinars">
@@ -97,24 +108,14 @@ export default async function HomePage() {
               </Link>
             </div>
             <div style={{ display: "flex", gap: 32, marginTop: 40, paddingTop: 32, borderTop: "1px solid var(--border-subtle)" }}>
-              <div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-strong)" }}>
-                  <AnimatedNumber value={38} suffix="+" />
+              {heroStats.map((stat, i) => (
+                <div key={i}>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-strong)" }}>
+                    <AnimatedNumber value={stat.value} decimals={stat.decimals} suffix={stat.suffix} />
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--text-muted)" }}>{stat.label}</div>
                 </div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Webinars hosted</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-strong)" }}>
-                  <AnimatedNumber value={12.4} decimals={1} suffix="k" />
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Community followers</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--text-strong)" }}>
-                  <AnimatedNumber value={1200} suffix="+" />
-                </div>
-                <div style={{ fontSize: 13, color: "var(--text-muted)" }}>Books &amp; ebooks sold</div>
-              </div>
+              ))}
             </div>
           </Reveal>
           <Reveal delayMs={150}>

@@ -149,3 +149,36 @@ model NewsletterSubscriber {
   status       String   @default("subscribed") // subscribed | unsubscribed
   subscribedAt DateTime @default(now())
 }
+
+// ── Site settings (singleton — always the one row with id "singleton") ───────
+// General site-wide content editable from /admin/settings, read by the public
+// pages instead of hardcoded copy. See lib/settings.ts for defaults and the
+// upsert-on-read helper that creates this row on first use.
+
+model SiteSettings {
+  id String @id @default("singleton")
+
+  // Hero (Home page)
+  heroBadge    String
+  heroHeadline String
+  heroSubtext  String
+  heroStats    Json // HeroStat[] — see lib/settings.ts
+
+  // About page
+  aboutAuthorBio Json // string[] — bio paragraphs ("about the author")
+  aboutUsText    Json // string[] — org/credentials paragraphs ("about us")
+
+  // Contact details (footer)
+  contactEmail    String
+  contactPhone    String
+  contactLocation String
+  socialInstagram String?
+  socialYoutube   String?
+  socialLinkedin  String?
+  socialFacebook  String?
+
+  // Analytics
+  googleAnalyticsId String?
+
+  updatedAt DateTime @updatedAt
+}

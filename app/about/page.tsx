@@ -3,6 +3,12 @@ import Link from "next/link";
 import { Badge, Button, Card } from "@/components/ui";
 import { Reveal } from "@/components/site/Reveal";
 import { AnimatedNumber } from "@/components/site/AnimatedNumber";
+import { getSiteSettings, parseParagraphs } from "@/lib/settings";
+
+// This page reads admin-editable site settings — without this, Next
+// prerenders it once at build time and admin edits never show up until the
+// next deploy.
+export const dynamic = "force-dynamic";
 
 const approach = [
   { title: "Shift Your Mindset", body: "Discover the power of naming your reality intentionally." },
@@ -10,11 +16,11 @@ const approach = [
   { title: "Design Your Life", body: "Live with clarity, freedom, and intention." },
 ];
 
-const credentialsCopy = [
-  "Mwenda Itumbiri holds an MBA in Human Resource Management (University of Nairobi), a BSc in Biochemistry (Egerton University), and multiple professional qualifications in HR, insurance, and coaching. He is a full member of IHRM, the Insurance Institute of Kenya (AIIK), and the Institute of Directors Kenya (IOD). His early service as a missionary with YWAM and FOCUS in Kenya and Norway continues to shape his faith-driven leadership today.",
-];
+export default async function AboutPage() {
+  const settings = await getSiteSettings();
+  const bioCopy = parseParagraphs(settings.aboutAuthorBio);
+  const credentialsCopy = parseParagraphs(settings.aboutUsText);
 
-export default function AboutPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--surface-page)" }}>
       {/* Bio */}
@@ -96,16 +102,11 @@ export default function AboutPage() {
             <h1 style={{ margin: "16px 0 0", fontSize: 42, fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, color: "var(--text-strong)" }}>
               Mwenda <span className="gradient-text">Itumbiri</span>
             </h1>
-            <p style={{ margin: "18px 0 0", fontSize: 16, lineHeight: 1.75, color: "var(--text-body)", maxWidth: 560 }}>
-              Mwenda Itumbiri is a leader, board advisor, and author with over two decades of People &amp; Culture
-              leadership across insurance, development finance, international NGOs, and public service &mdash;
-              known for building high-performing teams and unlocking human potential.
-            </p>
-            <p style={{ margin: "14px 0 0", fontSize: 16, lineHeight: 1.75, color: "var(--text-body)", maxWidth: 560 }}>
-              His life mission is helping people discover their authentic selves and live purposefully. He has
-              mentored hundreds of youth across Nairobi&rsquo;s Mathare, Huruma, and Korogocho areas, and remains a
-              sought-after speaker on emotional intelligence, HR leadership, and governance.
-            </p>
+            {bioCopy.map((paragraph, i) => (
+              <p key={i} style={{ margin: i === 0 ? "18px 0 0" : "14px 0 0", fontSize: 16, lineHeight: 1.75, color: "var(--text-body)", maxWidth: 560 }}>
+                {paragraph}
+              </p>
+            ))}
             <div style={{ display: "flex", gap: 12, marginTop: 28 }}>
               <Link href="/webinars">
                 <Button variant="primary" size="lg">

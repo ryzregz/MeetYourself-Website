@@ -1,6 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { ShopClient } from "./ShopClient";
 
+// Already dynamic in practice (reads searchParams below), but explicit so a
+// future refactor can't silently make book listings go stale.
+export const dynamic = "force-dynamic";
+
 export default async function ShopPage(props: PageProps<"/shop">) {
   const searchParams = await props.searchParams;
   const buy = searchParams.buy;

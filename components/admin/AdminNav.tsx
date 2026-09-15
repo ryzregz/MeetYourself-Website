@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/admin/books", label: "Books & Ebooks" },
   { href: "/admin/subscribers", label: "Subscribers" },
   { href: "/admin/users", label: "Admin Users" },
+  { href: "/admin/settings", label: "General Information" },
 ];
 
 export function AdminNav({ name, email }: { name: string; email: string }) {
